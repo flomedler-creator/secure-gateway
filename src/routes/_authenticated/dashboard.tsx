@@ -2,15 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Shield, Mail, Loader2 } from "lucide-react";
+import { LogOut, Mail, Shield, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({
-    meta: [{ title: "Dashboard" }],
-  }),
   component: DashboardPage,
 });
 
@@ -18,7 +15,7 @@ function DashboardPage() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<string>("pc");
+  const [role, setRole] = useState("pc");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,7 +31,8 @@ function DashboardPage() {
         const user = userData.user;
         setEmail(user.email ?? "");
 
-        // 🔥 PROFILE QUERY (FIXED)
+        console.log("USER ID:", user.id);
+
         const { data: profile, error } = await supabase
           .from("profiles")
           .select("*")
@@ -42,16 +40,17 @@ function DashboardPage() {
           .single();
 
         if (error) {
-          console.error("PROFILE ERROR:", error);
-          toast.error("Profile load failed: " + error.message);
+          console.error("🔥 PROFILE ERROR:", error);
+          alert("PROFILE ERROR: " + JSON.stringify(error));
           setRole("pc");
         } else {
+          console.log("PROFILE DATA:", profile);
           setRole(profile?.role ?? "pc");
         }
 
       } catch (err) {
-        console.error(err);
-        toast.error("Unexpected error loading dashboard");
+        console.error("UNEXPECTED ERROR:", err);
+        toast.error("Unexpected error");
       } finally {
         setLoading(false);
       }
@@ -70,7 +69,7 @@ function DashboardPage() {
       <header className="border-b border-border/60">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md bg-primary/10 ring-1 ring-primary/30" />
+            <div className="h-8 w-8 rounded-md bg-primary/10" />
             <span className="font-semibold">CRM</span>
           </div>
 
@@ -81,7 +80,7 @@ function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-12">
+      <main className="mx-auto max-w-5xl px-6 py-10">
         <h1 className="text-3xl font-semibold mb-8">Dashboard</h1>
 
         {loading ? (
@@ -99,7 +98,6 @@ function DashboardPage() {
                   <Mail className="h-4 w-4" />
                   Email
                 </CardTitle>
-                <CardDescription>User identity</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="font-mono text-sm">{email}</p>
@@ -113,7 +111,6 @@ function DashboardPage() {
                   <Shield className="h-4 w-4" />
                   Role
                 </CardTitle>
-                <CardDescription>Access level</CardDescription>
               </CardHeader>
               <CardContent>
                 <Badge className="capitalize">
