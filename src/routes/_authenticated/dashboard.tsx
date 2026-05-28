@@ -16,46 +16,52 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function DashboardPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState<string>("");
+
+  const [email, setEmail] = useState("");
   const [role, setRole] = useState<string>("pc");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      const { data: userData } = await supabase.auth.getUser();
+    const load = async () => {
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
 
-      if (!userData.user) {
-        navigate({ to: "/login", replace: true });
-        return;
+        if (userError || !userData.user) {
+          navigate({ to: "/login", replace: true });
+          return;
+        }
+
+        const user = userData.user;
+        setEmail(user.email ?? "");
+
+        // 🔥 PROFILE QUERY (FIXED)
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          console.error("PROFILE ERROR:", error);
+          toast.error("Profile load failed: " + error.message);
+          setRole("pc");
+        } else {
+          setRole(profile?.role ?? "pc");
+        }
+
+      } catch (err) {
+        console.error(err);
+        toast.error("Unexpected error loading dashboard");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setEmail(userData.user.email ?? "");
-
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userData.user.id)
-        .maybeSingle();
-
-      if (error) {
-        toast.error("Could not load profile");
-        setRole("pc");
-      } else {
-        setRole(profile?.role ?? "pc");
-      }
-
-      setLoading(false);
-    })();
+    load();
   }, [navigate]);
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
+    await supabase.auth.signOut();
     navigate({ to: "/login", replace: true });
   };
 
@@ -65,7 +71,7 @@ function DashboardPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md bg-primary/10 ring-1 ring-primary/30" />
-            <span className="font-semibold tracking-tight">CRM</span>
+            <span className="font-semibold">CRM</span>
           </div>
 
           <Button variant="ghost" size="sm" onClick={handleLogout}>
@@ -76,23 +82,20 @@ function DashboardPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            CRM system overview
-          </p>
-        </div>
+        <h1 className="text-3xl font-semibold mb-8">Dashboard</h1>
 
         {loading ? (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading…
+            Loading...
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
+
+            {/* EMAIL */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
+                <CardTitle className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
                   Email
                 </CardTitle>
@@ -103,9 +106,10 @@ function DashboardPage() {
               </CardContent>
             </Card>
 
+            {/* ROLE */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
+                <CardTitle className="flex items-center gap-2">
                   <Shield className="h-4 w-4" />
                   Role
                 </CardTitle>
@@ -117,6 +121,7 @@ function DashboardPage() {
                 </Badge>
               </CardContent>
             </Card>
+
           </div>
         )}
       </main>
