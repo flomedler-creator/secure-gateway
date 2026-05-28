@@ -103,7 +103,7 @@ export const updateAdminUser = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
     }
 
-    const patch: Record<string, unknown> = {};
+    const patch: { role?: (typeof ROLES)[number]; email?: string } = {};
     if (data.role) patch.role = data.role;
     if (data.email) patch.email = data.email;
     if (Object.keys(patch).length) {
