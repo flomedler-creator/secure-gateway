@@ -17,13 +17,18 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function DashboardPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState<string>("");
-  const [role, setRole] = useState<string | null>(null);
+  const [role, setRole] = useState<string>("pc");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return;
+
+      if (!userData.user) {
+        navigate({ to: "/login", replace: true });
+        return;
+      }
+
       setEmail(userData.user.email ?? "");
 
       const { data: profile, error } = await supabase
@@ -34,19 +39,23 @@ function DashboardPage() {
 
       if (error) {
         toast.error("Could not load profile");
+        setRole("pc");
       } else {
-        setRole(profile?.role ?? "user");
+        setRole(profile?.role ?? "pc");
       }
+
       setLoading(false);
     })();
-  }, []);
+  }, [navigate]);
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
+
     if (error) {
       toast.error(error.message);
       return;
     }
+
     navigate({ to: "/login", replace: true });
   };
 
@@ -56,8 +65,9 @@ function DashboardPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md bg-primary/10 ring-1 ring-primary/30" />
-            <span className="font-semibold tracking-tight">Console</span>
+            <span className="font-semibold tracking-tight">CRM</span>
           </div>
+
           <Button variant="ghost" size="sm" onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             Sign out
@@ -69,41 +79,41 @@ function DashboardPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            You're signed in. Here's your account at a glance.
+            CRM system overview
           </p>
         </div>
 
         {loading ? (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading account…
+            Loading…
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Card className="border-border/60">
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base font-medium">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Mail className="h-4 w-4" />
                   Email
                 </CardTitle>
-                <CardDescription>Your signed-in identity</CardDescription>
+                <CardDescription>User identity</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="font-mono text-sm text-foreground">{email}</p>
+                <p className="font-mono text-sm">{email}</p>
               </CardContent>
             </Card>
 
-            <Card className="border-border/60">
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base font-medium">
-                  <Shield className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Shield className="h-4 w-4" />
                   Role
                 </CardTitle>
-                <CardDescription>From your profile record</CardDescription>
+                <CardDescription>Access level</CardDescription>
               </CardHeader>
               <CardContent>
-                <Badge variant={role === "admin" ? "default" : "secondary"} className="capitalize">
-                  {role ?? "unknown"}
+                <Badge className="capitalize">
+                  {role}
                 </Badge>
               </CardContent>
             </Card>
