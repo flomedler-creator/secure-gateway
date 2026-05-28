@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -31,8 +31,6 @@ function DashboardPage() {
         const user = userData.user;
         setEmail(user.email ?? "");
 
-        console.log("USER ID:", user.id);
-
         const { data: profile, error } = await supabase
           .from("profiles")
           .select("*")
@@ -40,16 +38,15 @@ function DashboardPage() {
           .single();
 
         if (error) {
-          console.error("🔥 PROFILE ERROR:", error);
-          alert("PROFILE ERROR: " + JSON.stringify(error));
+          console.error("PROFILE ERROR:", error);
+          toast.error("Could not load profile");
           setRole("pc");
         } else {
-          console.log("PROFILE DATA:", profile);
           setRole(profile?.role ?? "pc");
         }
 
       } catch (err) {
-        console.error("UNEXPECTED ERROR:", err);
+        console.error(err);
         toast.error("Unexpected error");
       } finally {
         setLoading(false);
@@ -81,15 +78,24 @@ function DashboardPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-10">
-        <h1 className="text-3xl font-semibold mb-8">Dashboard</h1>
+        <h1 className="text-3xl font-semibold">Dashboard</h1>
+
+        {/* 🔥 BOTÓN ADMIN */}
+        {role === "admin" && (
+          <div className="mt-4">
+            <Button asChild>
+              <Link to="/admin">Admin Panel</Link>
+            </Button>
+          </div>
+        )}
 
         {loading ? (
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="mt-6 flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading...
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 mt-6">
 
             {/* EMAIL */}
             <Card>
